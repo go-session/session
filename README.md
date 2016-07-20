@@ -1,7 +1,7 @@
 Session
 =======
 
-> A branch is based on [beego session](https://github.com/astaxie/beego/tree/master/session)
+> A branch is based on [beego session](http://beego.me/docs/module/session.md)
 
 [![GoDoc](https://godoc.org/gopkg.in/session.v1?status.svg)](https://godoc.org/gopkg.in/session.v1)
 

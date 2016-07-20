@@ -12,19 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package session provider
-//
-// Usage:
-// import(
-//   "github.com/astaxie/beego/session"
-// )
-//
-//	func init() {
-//      globalSessions, _ = session.NewManager("memory", `{"cookieName":"gosessionid", "enableSetCookie,omitempty": true, "gclifetime":3600, "maxLifetime": 3600, "secure": false, "cookieLifeTime": 3600, "providerConfig": ""}`)
-//		go globalSessions.GC()
-//	}
-//
-// more docs: http://beego.me/docs/module/session.md
 package session
 
 import (
