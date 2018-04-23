@@ -2,7 +2,7 @@
 
 > A efficient, easy-to-use Go session library.
 
-[![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
+[![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
 
 ## Quick Start
 
@@ -90,13 +90,12 @@ $ ./server
     Copyright (c) 2018 Lyric
 
 [reportcard-url]: https://goreportcard.com/report/gopkg.in/session.v2
-
 [reportcard-image]: https://goreportcard.com/badge/gopkg.in/session.v2
-
+[Build-Status-Url]: https://travis-ci.org/go-session/session
+[Build-Status-Image]: https://travis-ci.org/go-session/session.svg?branch=master
+[Coverage-Url]: https://coveralls.io/github/go-session/session?branch=master
+[Coverage-Image]: https://coveralls.io/repos/github/go-session/session/badge.svg?branch=master
 [godoc-url]: https://godoc.org/gopkg.in/session.v2
-
 [godoc-image]: https://godoc.org/gopkg.in/session.v2?status.svg
-
 [license-url]: http://opensource.org/licenses/MIT
-
 [license-image]: https://img.shields.io/npm/l/express.svg
