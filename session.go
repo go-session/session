@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
@@ -197,11 +198,9 @@ func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (m *Manager) signature(sid string) string {
-	h := sha1.New()
-	h.Write(m.opts.sign)
+	h := hmac.New(sha1.New, m.opts.sign)
 	h.Write([]byte(sid))
-	bs := h.Sum(nil)
-	return fmt.Sprintf("%x", bs)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (m *Manager) encodeSessionID(sid string) string {
