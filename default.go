@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"net/http"
 )
 
@@ -14,11 +15,11 @@ func InitManager(opt ...Option) {
 }
 
 // Start Start a session and return to session storage
-func Start(w http.ResponseWriter, r *http.Request) (Store, error) {
-	return defaultManager.Start(w, r)
+func Start(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
+	return defaultManager.Start(ctx, w, r)
 }
 
 // Destroy Destroy a session
-func Destroy(w http.ResponseWriter, r *http.Request) error {
-	return defaultManager.Destroy(w, r)
+func Destroy(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	return defaultManager.Destroy(ctx, w, r)
 }

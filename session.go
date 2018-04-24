@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
@@ -118,21 +119,27 @@ type Manager struct {
 }
 
 // Start Start a session and return to session storage
-func (m *Manager) Start(w http.ResponseWriter, r *http.Request) (Store, error) {
+func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = newReqContext(ctx, r)
+	ctx = newResContext(ctx, w)
+
 	sid, err := m.sessionID(r)
 	if err != nil {
 		return nil, err
 	}
 
 	if sid != "" {
-		if exists, verr := m.opts.store.Check(sid); verr != nil {
+		if exists, verr := m.opts.store.Check(ctx, sid); verr != nil {
 			return nil, verr
 		} else if exists {
-			return m.opts.store.Update(sid, m.opts.expired)
+			return m.opts.store.Update(ctx, sid, m.opts.expired)
 		}
 	}
 
-	store, err := m.opts.store.Create(m.opts.sessionID(), m.opts.expired)
+	store, err := m.opts.store.Create(ctx, m.opts.sessionID(), m.opts.expired)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +165,13 @@ func (m *Manager) Start(w http.ResponseWriter, r *http.Request) (Store, error) {
 }
 
 // Destroy Destroy a session
-func (m *Manager) Destroy(w http.ResponseWriter, r *http.Request) error {
+func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = newReqContext(ctx, r)
+	ctx = newResContext(ctx, w)
+
 	sid, err := m.sessionID(r)
 	if err != nil {
 		return err
@@ -166,7 +179,7 @@ func (m *Manager) Destroy(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	err = m.opts.store.Delete(sid)
+	err = m.opts.store.Delete(ctx, sid)
 	if err != nil {
 		return err
 	}

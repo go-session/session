@@ -18,6 +18,7 @@ $ go get -u -v gopkg.in/session.v2
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -31,7 +32,7 @@ func main() {
 	)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		store, err := session.Start(w, r)
+		store, err := session.Start(context.Background(), w, r)
 		if err != nil {
 			fmt.Fprint(w, err)
 			return
@@ -48,7 +49,7 @@ func main() {
 	})
 
 	http.HandleFunc("/foo", func(w http.ResponseWriter, r *http.Request) {
-		store, err := session.Start(w, r)
+		store, err := session.Start(context.Background(), w, r)
 		if err != nil {
 			fmt.Fprint(w, err)
 			return

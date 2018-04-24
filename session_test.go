@@ -18,7 +18,7 @@ func TestSessionStart(t *testing.T) {
 	)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		store, err := Start(w, r)
+		store, err := Start(nil, w, r)
 		if err != nil {
 			t.Error(err)
 			return
@@ -94,7 +94,7 @@ func TestSessionDestroy(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("logout") == "1" {
-			err := Destroy(w, r)
+			err := Destroy(nil, w, r)
 			if err != nil {
 				t.Error(err)
 				return
@@ -103,7 +103,7 @@ func TestSessionDestroy(t *testing.T) {
 			return
 		}
 
-		store, err := Start(w, r)
+		store, err := Start(nil, w, r)
 		if err != nil {
 			t.Error(err)
 			return
