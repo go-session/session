@@ -82,9 +82,17 @@ $ ./server
 
 ## Features
 
--   Easy to use
--   Multi-storage support
--   More secure, signature-based tamper-proof
+- Easy to use
+- Multi-storage support
+- More secure, signature-based tamper-proof
+- Context support
+
+## Store Implementations
+
+- [Memory Store](https://github.com/go-session/session/blob/master/store.go#L50) - [buntdb](https://github.com/tidwall/buntdb)
+- [File Store](https://github.com/go-session/session/blob/master/store.go#L60) - [buntdb](https://github.com/tidwall/buntdb)
+- [https://github.com/go-session/redis](https://github.com/go-session/redis) - Redis
+- [https://github.com/go-session/cookie](https://github.com/go-session/cookie) - Cookie
 
 ## MIT License
 
