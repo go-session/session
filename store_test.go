@@ -56,8 +56,7 @@ func testStore(t *testing.T, mstore ManagerStore) {
 		return
 	}
 
-	store.Flush()
-	err = store.Save()
+	err = store.Flush()
 	if err != nil {
 		t.Error(err.Error())
 		return

@@ -40,10 +40,10 @@ type Store interface {
 	Get(key string) (string, bool)
 	// Delete session value, call save function to take effect
 	Delete(key string) string
-	// Clear all session data, call save function to take effect
-	Flush()
 	// Save session data
 	Save() error
+	// Clear all session data
+	Flush() error
 }
 
 // NewMemoryStore Create an instance of a memory store
@@ -205,10 +205,11 @@ func (s *defaultStore) Delete(key string) string {
 	return v
 }
 
-func (s *defaultStore) Flush() {
+func (s *defaultStore) Flush() error {
 	s.Lock()
 	s.values = make(map[string]string)
 	s.Unlock()
+	return s.Save()
 }
 
 func (s *defaultStore) Save() error {
