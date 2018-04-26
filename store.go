@@ -2,16 +2,18 @@ package session
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
+	"github.com/json-iterator/go"
 	"github.com/tidwall/buntdb"
 )
 
 var (
-	_ ManagerStore = &defaultManagerStore{}
-	_ Store        = &defaultStore{}
+	_             ManagerStore = &defaultManagerStore{}
+	_             Store        = &defaultStore{}
+	jsonMarshal                = jsoniter.Marshal
+	jsonUnmarshal              = jsoniter.Unmarshal
 )
 
 // ManagerStore Management of session storage, including creation, update, and delete operations
@@ -92,7 +94,7 @@ func (s *defaultManagerStore) parseValue(value string) (map[string]string, error
 	var values map[string]string
 
 	if len(value) > 0 {
-		err := json.Unmarshal([]byte(value), &values)
+		err := jsonUnmarshal([]byte(value), &values)
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +219,7 @@ func (s *defaultStore) Save() error {
 
 	s.RLock()
 	if len(s.values) > 0 {
-		buf, _ := json.Marshal(s.values)
+		buf, _ := jsonMarshal(s.values)
 		value = string(buf)
 	}
 	s.RUnlock()
