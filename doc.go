@@ -1,6 +1,7 @@
-// Package session implements a efficient, safely and easy-to-use session library for Go.
-
 /*
+Package session implements a efficient, safely and easy-to-use session library for Go.
+
+
 Example:
 
 	package main
@@ -54,7 +55,10 @@ Example:
 		http.ListenAndServe(":8080", nil)
 	}
 
+Open in your web browser at http://localhost:8080
+Output:
+	foo:bar
+
 Learn more at https://github.com/go-session/session
 */
-
 package session
