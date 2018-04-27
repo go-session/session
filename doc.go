@@ -56,6 +56,7 @@ Example:
 	}
 
 Open in your web browser at http://localhost:8080
+
 Output:
 	foo:bar
 
