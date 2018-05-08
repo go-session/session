@@ -23,3 +23,8 @@ func Start(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, 
 func Destroy(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	return defaultManager.Destroy(ctx, w, r)
 }
+
+// Refresh a session and return to session storage
+func Refresh(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
+	return defaultManager.Refresh(ctx, w, r)
+}

@@ -1,171 +1,171 @@
 package session
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-func testStore(t *testing.T, mstore ManagerStore) {
-	store, err := mstore.Create(nil, "store", 2)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
-
-	if store.SessionID() != "store" {
-		t.Error("Wrong value obtained")
-		return
-	}
+func testStore(store Store) {
+	foo, ok := store.Get("foo")
+	So(ok, ShouldBeFalse)
+	So(foo, ShouldBeNil)
 
 	store.Set("foo", "bar")
-	store.Set("user", "bar")
-	err = store.Save()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	store.Set("foo2", "bar2")
+	err := store.Save()
+	So(err, ShouldBeNil)
 
-	foo, ok := store.Get("foo")
-	if !ok || foo != "bar" {
-		t.Error("Wrong value obtained")
-		return
-	}
+	foo, ok = store.Get("foo")
+	So(ok, ShouldBeTrue)
+	So(foo, ShouldEqual, "bar")
 
 	foo = store.Delete("foo")
-	if foo != "bar" {
-		t.Error("Wrong value obtained")
-		return
-	}
+	So(foo, ShouldEqual, "bar")
 
-	err = store.Save()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	foo, ok = store.Get("foo")
+	So(ok, ShouldBeFalse)
+	So(foo, ShouldBeNil)
 
-	_, ok = store.Get("foo")
-	if ok {
-		t.Error("Expected value is false")
-		return
-	}
-
-	user, ok := store.Get("user")
-	if !ok || user != "bar" {
-		t.Error("Wrong value obtained")
-		return
-	}
+	foo2, ok := store.Get("foo2")
+	So(ok, ShouldBeTrue)
+	So(foo2, ShouldEqual, "bar2")
 
 	err = store.Flush()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	So(err, ShouldBeNil)
 
-	_, ok = store.Get("user")
-	if ok {
-		t.Error("Expected value is false")
-		return
-	}
+	foo2, ok = store.Get("foo2")
+	So(ok, ShouldBeFalse)
+	So(foo2, ShouldBeNil)
 }
 
 func TestMemoryStore(t *testing.T) {
 	mstore := NewMemoryStore()
-	testStore(t, mstore)
+	defer mstore.Close()
+
+	Convey("Test memory storage operation", t, func() {
+		store, err := mstore.Create(context.Background(), "test_memory_store", 10)
+		if err != nil {
+			So(err, ShouldBeNil)
+		}
+		testStore(store)
+	})
 }
 
 func TestFileStore(t *testing.T) {
 	mstore := NewFileStore("test.db")
 	defer os.Remove("test.db")
 	defer mstore.Close()
-	testStore(t, mstore)
+
+	Convey("Test file storage operation", t, func() {
+		store, err := mstore.Create(context.Background(), "test_file_store", 10)
+		if err != nil {
+			So(err, ShouldBeNil)
+		}
+		testStore(store)
+	})
 }
 
-func testManagerStore(t *testing.T, mstore ManagerStore) {
-	sid := "manager"
-	store, err := mstore.Create(nil, sid, 2)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+func testManagerStore(mstore ManagerStore) {
+	sid := "test_manager_store"
+	store, err := mstore.Create(context.Background(), sid, 10)
+	So(store, ShouldNotBeNil)
+	So(err, ShouldBeNil)
 
 	store.Set("foo", "bar")
 	err = store.Save()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	So(err, ShouldBeNil)
 
-	store, err = mstore.Update(nil, sid, 2)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	store, err = mstore.Update(context.Background(), sid, 10)
+	So(store, ShouldNotBeNil)
+	So(err, ShouldBeNil)
 
 	foo, ok := store.Get("foo")
-	if !ok || foo != "bar" {
-		t.Error("Wrong value obtained")
-		return
-	}
+	So(ok, ShouldBeTrue)
+	So(foo, ShouldEqual, "bar")
 
-	err = mstore.Delete(nil, sid)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	newsid := "test_manager_store2"
+	store, err = mstore.Refresh(context.Background(), sid, newsid, 10)
+	So(store, ShouldNotBeNil)
+	So(err, ShouldBeNil)
 
-	exists, err := mstore.Check(nil, sid)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	} else if exists {
-		t.Error("Expected value is false")
-	}
+	foo, ok = store.Get("foo")
+	So(ok, ShouldBeTrue)
+	So(foo, ShouldEqual, "bar")
+
+	exists, err := mstore.Check(context.Background(), sid)
+	So(exists, ShouldBeFalse)
+	So(err, ShouldBeNil)
+
+	err = mstore.Delete(context.Background(), newsid)
+	So(err, ShouldBeNil)
+
+	exists, err = mstore.Check(context.Background(), newsid)
+	So(exists, ShouldBeFalse)
+	So(err, ShouldBeNil)
 }
 
 func TestManagerMemoryStore(t *testing.T) {
 	mstore := NewMemoryStore()
 	defer mstore.Close()
-	testManagerStore(t, mstore)
+
+	Convey("Test memory-based storage management operations", t, func() {
+		testManagerStore(mstore)
+	})
 }
 
 func TestManagerFileStore(t *testing.T) {
 	mstore := NewFileStore("test_manager.db")
 	defer os.Remove("test_manager.db")
 	defer mstore.Close()
-	testManagerStore(t, mstore)
+	Convey("Test file-based storage management operations", t, func() {
+		testManagerStore(mstore)
+	})
 }
 
-func TestStoreWithExpired(t *testing.T) {
-	mstore := NewMemoryStore()
-
+func testStoreWithExpired(mstore ManagerStore) {
 	sid := "test_store_expired"
-	store, err := mstore.Create(nil, sid, 1)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	store, err := mstore.Create(context.Background(), sid, 1)
+	So(store, ShouldNotBeNil)
+	So(err, ShouldBeNil)
 
 	store.Set("foo", "bar")
 	err = store.Save()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
+	So(err, ShouldBeNil)
+
+	store, err = mstore.Update(context.Background(), sid, 1)
+	So(store, ShouldNotBeNil)
+	So(err, ShouldBeNil)
 
 	foo, ok := store.Get("foo")
-	if !ok || foo != "bar" {
-		t.Error("Wrong value obtained")
-		return
-	}
+	So(foo, ShouldEqual, "bar")
+	So(ok, ShouldBeTrue)
 
 	time.Sleep(time.Second * 2)
 
-	exists, err := mstore.Check(nil, sid)
-	if err != nil {
-		t.Error(err.Error())
-		return
-	} else if exists {
-		t.Error("Expected value is false")
-	}
+	exists, err := mstore.Check(context.Background(), sid)
+	So(err, ShouldBeNil)
+	So(exists, ShouldBeFalse)
+}
+
+func TestMemoryStoreWithExpired(t *testing.T) {
+	mstore := NewMemoryStore()
+	defer mstore.Close()
+
+	Convey("Test Memory Store Expiration", t, func() {
+		testStoreWithExpired(mstore)
+	})
+}
+
+func TestFileStoreWithExpired(t *testing.T) {
+	mstore := NewFileStore("test_expired.db")
+	defer os.Remove("test_expired.db")
+	defer mstore.Close()
+
+	Convey("Test File Store Expiration", t, func() {
+		testStoreWithExpired(mstore)
+	})
 }

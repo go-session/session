@@ -18,14 +18,16 @@ var (
 
 // ManagerStore Management of session storage, including creation, update, and delete operations
 type ManagerStore interface {
+	// Check the session store exists
+	Check(ctx context.Context, sid string) (bool, error)
 	// Create a session store and specify the expiration time (in seconds)
 	Create(ctx context.Context, sid string, expired int64) (Store, error)
 	// Update a session store and specify the expiration time (in seconds)
 	Update(ctx context.Context, sid string, expired int64) (Store, error)
 	// Delete a session store
 	Delete(ctx context.Context, sid string) error
-	// Check the session store exists
-	Check(ctx context.Context, sid string) (bool, error)
+	// Use sid to replace old sid and return session store
+	Refresh(ctx context.Context, oldsid, sid string, expired int64) (Store, error)
 	// Close storage, release resources
 	Close() error
 }
@@ -37,11 +39,11 @@ type Store interface {
 	// Get the current session id
 	SessionID() string
 	// Set session value, call save function to take effect
-	Set(key, value string)
+	Set(key string, value interface{})
 	// Get session value
-	Get(key string) (string, bool)
+	Get(key string) (interface{}, bool)
 	// Delete session value, call save function to take effect
-	Delete(key string) string
+	Delete(key string) interface{}
 	// Save session data
 	Save() error
 	// Clear all session data
@@ -90,8 +92,8 @@ func (s *defaultManagerStore) getValue(sid string) (string, error) {
 	return value, err
 }
 
-func (s *defaultManagerStore) parseValue(value string) (map[string]string, error) {
-	var values map[string]string
+func (s *defaultManagerStore) parseValue(value string) (map[string]interface{}, error) {
+	var values map[string]interface{}
 
 	if len(value) > 0 {
 		err := jsonUnmarshal([]byte(value), &values)
@@ -101,48 +103,9 @@ func (s *defaultManagerStore) parseValue(value string) (map[string]string, error
 	}
 
 	if values == nil {
-		values = make(map[string]string)
+		values = make(map[string]interface{})
 	}
 	return values, nil
-}
-
-func (s *defaultManagerStore) Create(ctx context.Context, sid string, expired int64) (Store, error) {
-	values := make(map[string]string)
-	return &defaultStore{ctx: ctx, sid: sid, db: s.db, expired: expired, values: values}, nil
-}
-
-func (s *defaultManagerStore) Update(ctx context.Context, sid string, expired int64) (Store, error) {
-	value, err := s.getValue(sid)
-	if err != nil {
-		return nil, err
-	} else if value == "" {
-		return s.Create(ctx, sid, expired)
-	}
-
-	err = s.db.Update(func(tx *buntdb.Tx) error {
-		_, _, err = tx.Set(sid, value, &buntdb.SetOptions{Expires: true, TTL: time.Duration(expired) * time.Second})
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	values, err := s.parseValue(value)
-	if err != nil {
-		return nil, err
-	}
-
-	return &defaultStore{ctx: ctx, sid: sid, db: s.db, expired: expired, values: values}, nil
-}
-
-func (s *defaultManagerStore) Delete(_ context.Context, sid string) error {
-	return s.db.Update(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(sid)
-		if err == buntdb.ErrNotFound {
-			return nil
-		}
-		return err
-	})
 }
 
 func (s *defaultManagerStore) Check(_ context.Context, sid string) (bool, error) {
@@ -161,17 +124,113 @@ func (s *defaultManagerStore) Check(_ context.Context, sid string) (bool, error)
 	return exists, err
 }
 
+func (s *defaultManagerStore) Create(ctx context.Context, sid string, expired int64) (Store, error) {
+	return &defaultStore{
+		ctx:     ctx,
+		sid:     sid,
+		db:      s.db,
+		expired: expired,
+		values:  make(map[string]interface{}),
+	}, nil
+}
+
+func (s *defaultManagerStore) Update(ctx context.Context, sid string, expired int64) (Store, error) {
+	value, err := s.getValue(sid)
+	if err != nil {
+		return nil, err
+	} else if value == "" {
+		return &defaultStore{
+			ctx:     ctx,
+			sid:     sid,
+			db:      s.db,
+			expired: expired,
+			values:  make(map[string]interface{}),
+		}, nil
+	}
+
+	err = s.db.Update(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(sid, value,
+			&buntdb.SetOptions{Expires: true, TTL: time.Duration(expired) * time.Second})
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values, err := s.parseValue(value)
+	if err != nil {
+		return nil, err
+	}
+	return &defaultStore{
+		ctx:     ctx,
+		sid:     sid,
+		db:      s.db,
+		expired: expired,
+		values:  values,
+	}, nil
+}
+
+func (s *defaultManagerStore) Delete(_ context.Context, sid string) error {
+	return s.db.Update(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(sid)
+		if err == buntdb.ErrNotFound {
+			return nil
+		}
+		return err
+	})
+}
+
+func (s *defaultManagerStore) Refresh(ctx context.Context, oldsid, sid string, expired int64) (Store, error) {
+	value, err := s.getValue(oldsid)
+	if err != nil {
+		return nil, err
+	} else if value == "" {
+		return &defaultStore{
+			ctx:     ctx,
+			sid:     sid,
+			db:      s.db,
+			expired: expired,
+			values:  make(map[string]interface{}),
+		}, nil
+	}
+
+	err = s.db.Update(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(sid, value,
+			&buntdb.SetOptions{Expires: true, TTL: time.Duration(expired) * time.Second})
+		if err != nil {
+			return err
+		}
+		_, err = tx.Delete(oldsid)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	values, err := s.parseValue(value)
+	if err != nil {
+		return nil, err
+	}
+	return &defaultStore{
+		ctx:     ctx,
+		sid:     sid,
+		db:      s.db,
+		expired: expired,
+		values:  values,
+	}, nil
+}
+
 func (s *defaultManagerStore) Close() error {
 	return s.db.Close()
 }
 
 type defaultStore struct {
-	sid     string
-	db      *buntdb.DB
-	expired int64
-	values  map[string]string
 	sync.RWMutex
-	ctx context.Context
+	ctx     context.Context
+	sid     string
+	expired int64
+	db      *buntdb.DB
+	values  map[string]interface{}
 }
 
 func (s *defaultStore) Context() context.Context {
@@ -182,20 +241,20 @@ func (s *defaultStore) SessionID() string {
 	return s.sid
 }
 
-func (s *defaultStore) Set(key, value string) {
+func (s *defaultStore) Set(key string, value interface{}) {
 	s.Lock()
 	s.values[key] = value
 	s.Unlock()
 }
 
-func (s *defaultStore) Get(key string) (string, bool) {
+func (s *defaultStore) Get(key string) (interface{}, bool) {
 	s.RLock()
-	defer s.RUnlock()
 	val, ok := s.values[key]
+	s.RUnlock()
 	return val, ok
 }
 
-func (s *defaultStore) Delete(key string) string {
+func (s *defaultStore) Delete(key string) interface{} {
 	s.RLock()
 	v, ok := s.values[key]
 	s.RUnlock()
@@ -209,7 +268,7 @@ func (s *defaultStore) Delete(key string) string {
 
 func (s *defaultStore) Flush() error {
 	s.Lock()
-	s.values = make(map[string]string)
+	s.values = make(map[string]interface{})
 	s.Unlock()
 	return s.Save()
 }
@@ -219,13 +278,18 @@ func (s *defaultStore) Save() error {
 
 	s.RLock()
 	if len(s.values) > 0 {
-		buf, _ := jsonMarshal(s.values)
+		buf, err := jsonMarshal(s.values)
+		if err != nil {
+			s.RUnlock()
+			return err
+		}
 		value = string(buf)
 	}
 	s.RUnlock()
 
 	return s.db.Update(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(s.sid, value, &buntdb.SetOptions{Expires: true, TTL: time.Duration(s.expired) * time.Second})
+		_, _, err := tx.Set(s.sid, value,
+			&buntdb.SetOptions{Expires: true, TTL: time.Duration(s.expired) * time.Second})
 		return err
 	})
 }

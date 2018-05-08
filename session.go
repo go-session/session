@@ -119,14 +119,9 @@ type Manager struct {
 	opts options
 }
 
-// Start Start a session and return to session storage
+// Start a session and return to session storage
 func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	ctx = newReqContext(ctx, r)
-	ctx = newResContext(ctx, w)
-
+	ctx = m.getContext(ctx, w, r)
 	sid, err := m.sessionID(r)
 	if err != nil {
 		return nil, err
@@ -165,18 +160,21 @@ func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return store, nil
 }
 
-// Destroy Destroy a session
+// Destroy a session
 func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	ctx = newReqContext(ctx, r)
-	ctx = newResContext(ctx, w)
+	ctx = m.getContext(ctx, w, r)
 
 	sid, err := m.sessionID(r)
 	if err != nil {
 		return err
 	} else if sid == "" {
+		return nil
+	}
+
+	exists, err := m.opts.store.Check(ctx, sid)
+	if err != nil {
+		return err
+	} else if !exists {
 		return nil
 	}
 
@@ -195,6 +193,51 @@ func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	http.SetCookie(w, cookie)
 	return nil
+}
+
+// Refresh a session and return to session storage
+func (m *Manager) Refresh(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
+	ctx = m.getContext(ctx, w, r)
+
+	sid, err := m.sessionID(r)
+	if err != nil {
+		return nil, err
+	} else if sid == "" {
+		sid = m.opts.sessionID()
+	}
+
+	store, err := m.opts.store.Refresh(ctx, sid, m.opts.sessionID(), m.opts.expired)
+	if err != nil {
+		return nil, err
+	}
+
+	cookie := &http.Cookie{
+		Name:     m.opts.cookieName,
+		Value:    m.encodeSessionID(store.SessionID()),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   m.isSecure(r),
+		Domain:   m.opts.domain,
+	}
+
+	if v := m.opts.cookieLifeTime; v > 0 {
+		cookie.MaxAge = v
+		cookie.Expires = time.Now().Add(time.Duration(v) * time.Second)
+	}
+
+	http.SetCookie(w, cookie)
+	r.AddCookie(cookie)
+
+	return store, nil
+}
+
+func (m *Manager) getContext(ctx context.Context, w http.ResponseWriter, r *http.Request) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = newReqContext(ctx, r)
+	ctx = newResContext(ctx, w)
+	return ctx
 }
 
 func (m *Manager) signature(sid string) string {
