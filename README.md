@@ -1,6 +1,6 @@
 # session
 
-> A efficient, easy-to-use Go session library.
+> A efficient, safely and easy-to-use session library for Go. 
 
 [![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
 
