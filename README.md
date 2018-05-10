@@ -94,6 +94,11 @@ $ ./server
 - [https://github.com/go-session/redis](https://github.com/go-session/redis) - Redis
 - [https://github.com/go-session/cookie](https://github.com/go-session/cookie) - Cookie
 
+## Middlewares
+
+- [https://github.com/go-session/gin-session](https://github.com/go-session/gin-session) - [Gin](https://github.com/gin-gonic/gin)
+- [https://github.com/go-session/gear-session](https://github.com/go-session/gear-session) - [Gear](https://github.com/teambition/gear)
+
 ## MIT License
 
     Copyright (c) 2018 Lyric
