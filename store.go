@@ -56,8 +56,7 @@ func NewMemoryStore() ManagerStore {
 	if err != nil {
 		panic(err)
 	}
-
-	return &defaultManagerStore{db}
+	return newDefaultManagerStore(db)
 }
 
 // NewFileStore Create an instance of a file store
@@ -66,12 +65,23 @@ func NewFileStore(path string) ManagerStore {
 	if err != nil {
 		panic(err)
 	}
+	return newDefaultManagerStore(db)
+}
 
-	return &defaultManagerStore{db}
+func newDefaultManagerStore(db *buntdb.DB) *defaultManagerStore {
+	return &defaultManagerStore{
+		db: db,
+		pool: sync.Pool{
+			New: func() interface{} {
+				return newDefaultStore(db)
+			},
+		},
+	}
 }
 
 type defaultManagerStore struct {
-	db *buntdb.DB
+	db   *buntdb.DB
+	pool sync.Pool
 }
 
 func (s *defaultManagerStore) getValue(sid string) (string, error) {
@@ -102,50 +112,32 @@ func (s *defaultManagerStore) parseValue(value string) (map[string]interface{}, 
 		}
 	}
 
-	if values == nil {
-		values = make(map[string]interface{})
-	}
 	return values, nil
 }
 
 func (s *defaultManagerStore) Check(_ context.Context, sid string) (bool, error) {
-	var exists bool
-	err := s.db.View(func(tx *buntdb.Tx) error {
-		_, err := tx.Get(sid)
-		if err != nil {
-			if err == buntdb.ErrNotFound {
-				return nil
-			}
-			return err
-		}
-		exists = true
-		return nil
-	})
-	return exists, err
+	val, err := s.getValue(sid)
+	if err != nil {
+		return false, err
+	}
+	return val != "", nil
 }
 
 func (s *defaultManagerStore) Create(ctx context.Context, sid string, expired int64) (Store, error) {
-	return &defaultStore{
-		ctx:     ctx,
-		sid:     sid,
-		db:      s.db,
-		expired: expired,
-		values:  make(map[string]interface{}),
-	}, nil
+	store := s.pool.Get().(*defaultStore)
+	store.reset(ctx, sid, expired, nil)
+	return store, nil
 }
 
 func (s *defaultManagerStore) Update(ctx context.Context, sid string, expired int64) (Store, error) {
+	store := s.pool.Get().(*defaultStore)
+
 	value, err := s.getValue(sid)
 	if err != nil {
 		return nil, err
 	} else if value == "" {
-		return &defaultStore{
-			ctx:     ctx,
-			sid:     sid,
-			db:      s.db,
-			expired: expired,
-			values:  make(map[string]interface{}),
-		}, nil
+		store.reset(ctx, sid, expired, nil)
+		return store, nil
 	}
 
 	err = s.db.Update(func(tx *buntdb.Tx) error {
@@ -161,13 +153,9 @@ func (s *defaultManagerStore) Update(ctx context.Context, sid string, expired in
 	if err != nil {
 		return nil, err
 	}
-	return &defaultStore{
-		ctx:     ctx,
-		sid:     sid,
-		db:      s.db,
-		expired: expired,
-		values:  values,
-	}, nil
+
+	store.reset(ctx, sid, expired, values)
+	return store, nil
 }
 
 func (s *defaultManagerStore) Delete(_ context.Context, sid string) error {
@@ -181,17 +169,14 @@ func (s *defaultManagerStore) Delete(_ context.Context, sid string) error {
 }
 
 func (s *defaultManagerStore) Refresh(ctx context.Context, oldsid, sid string, expired int64) (Store, error) {
+	store := s.pool.Get().(*defaultStore)
+
 	value, err := s.getValue(oldsid)
 	if err != nil {
 		return nil, err
 	} else if value == "" {
-		return &defaultStore{
-			ctx:     ctx,
-			sid:     sid,
-			db:      s.db,
-			expired: expired,
-			values:  make(map[string]interface{}),
-		}, nil
+		store.reset(ctx, sid, expired, nil)
+		return store, nil
 	}
 
 	err = s.db.Update(func(tx *buntdb.Tx) error {
@@ -211,17 +196,19 @@ func (s *defaultManagerStore) Refresh(ctx context.Context, oldsid, sid string, e
 	if err != nil {
 		return nil, err
 	}
-	return &defaultStore{
-		ctx:     ctx,
-		sid:     sid,
-		db:      s.db,
-		expired: expired,
-		values:  values,
-	}, nil
+
+	store.reset(ctx, sid, expired, values)
+	return store, nil
 }
 
 func (s *defaultManagerStore) Close() error {
 	return s.db.Close()
+}
+
+func newDefaultStore(db *buntdb.DB) *defaultStore {
+	return &defaultStore{
+		db: db,
+	}
 }
 
 type defaultStore struct {
@@ -231,6 +218,16 @@ type defaultStore struct {
 	expired int64
 	db      *buntdb.DB
 	values  map[string]interface{}
+}
+
+func (s *defaultStore) reset(ctx context.Context, sid string, expired int64, values map[string]interface{}) {
+	if values == nil {
+		values = make(map[string]interface{})
+	}
+	s.ctx = ctx
+	s.sid = sid
+	s.expired = expired
+	s.values = values
 }
 
 func (s *defaultStore) Context() context.Context {
