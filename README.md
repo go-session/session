@@ -97,6 +97,7 @@ $ ./server
 ## Middlewares
 
 - [https://github.com/go-session/gin-session](https://github.com/go-session/gin-session) - [Gin](https://github.com/gin-gonic/gin)
+- [https://github.com/go-session/beego-session](https://github.com/go-session/beego-session) - [Beego](https://github.com/astaxie/beego)
 - [https://github.com/go-session/gear-session](https://github.com/go-session/gear-session) - [Gear](https://github.com/teambition/gear)
 
 ## MIT License
