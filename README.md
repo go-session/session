@@ -99,6 +99,7 @@ $ ./server
 - [https://github.com/go-session/gin-session](https://github.com/go-session/gin-session) - [Gin](https://github.com/gin-gonic/gin)
 - [https://github.com/go-session/beego-session](https://github.com/go-session/beego-session) - [Beego](https://github.com/astaxie/beego)
 - [https://github.com/go-session/gear-session](https://github.com/go-session/gear-session) - [Gear](https://github.com/teambition/gear)
+- [https://github.com/go-session/echo-session](https://github.com/go-session/echo-session) - [Echo](https://github.com/labstack/echo)
 
 ## MIT License
 
