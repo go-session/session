@@ -11,15 +11,10 @@ Example:
 		"fmt"
 		"net/http"
 
-		"gopkg.in/session.v2"
+		"gopkg.in/session.v3"
 	)
 
 	func main() {
-		session.InitManager(
-			session.SetCookieName("session_id"),
-			session.SetSign([]byte("sign")),
-		)
-
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			store, err := session.Start(context.Background(), w, r)
 			if err != nil {

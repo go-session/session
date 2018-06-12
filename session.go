@@ -23,7 +23,7 @@ var (
 // Define default options
 var defaultOptions = options{
 	cookieName:     "session_id",
-	cookieLifeTime: 3600 * 24,
+	cookieLifeTime: 3600 * 24 * 7,
 	expired:        7200,
 	store:          NewMemoryStore(),
 	sessionID: func() string {

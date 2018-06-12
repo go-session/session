@@ -2,14 +2,14 @@
 
 > A efficient, safely and easy-to-use session library for Go. 
 
-[![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
+[![Build][Build-Status-Image]][Build-Status-Url] [![Codecov][codecov-image]][codecov-url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
 
 ## Quick Start
 
 ### Download and install
 
 ```bash
-$ go get -u -v gopkg.in/session.v2
+$ go get -u -v gopkg.in/session.v3
 ```
 
 ### Create file `server.go`
@@ -22,15 +22,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"gopkg.in/session.v2"
+	"gopkg.in/session.v3"
 )
 
 func main() {
-	session.InitManager(
-		session.SetCookieName("session_id"),
-		session.SetSign([]byte("sign")),
-	)
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		store, err := session.Start(context.Background(), w, r)
 		if err != nil {
@@ -84,14 +79,14 @@ $ ./server
 
 - Easy to use
 - Multi-storage support
+- Multi-middleware support
 - More secure, signature-based tamper-proof
 - Context support
 
 ## Store Implementations
 
-- [Memory Store](https://github.com/go-session/session/blob/master/store.go#L50) - [buntdb](https://github.com/tidwall/buntdb)
-- [File Store](https://github.com/go-session/session/blob/master/store.go#L60) - [buntdb](https://github.com/tidwall/buntdb)
 - [https://github.com/go-session/redis](https://github.com/go-session/redis) - Redis
+- [https://github.com/go-session/buntdb](https://github.com/go-session/buntdb) - [BuntDB](https://github.com/tidwall/buntdb)
 - [https://github.com/go-session/cookie](https://github.com/go-session/cookie) - Cookie
 
 ## Middlewares
@@ -105,13 +100,13 @@ $ ./server
 
     Copyright (c) 2018 Lyric
 
-[reportcard-url]: https://goreportcard.com/report/gopkg.in/session.v2
-[reportcard-image]: https://goreportcard.com/badge/gopkg.in/session.v2
 [Build-Status-Url]: https://travis-ci.org/go-session/session
 [Build-Status-Image]: https://travis-ci.org/go-session/session.svg?branch=master
-[Coverage-Url]: https://coveralls.io/github/go-session/session?branch=master
-[Coverage-Image]: https://coveralls.io/repos/github/go-session/session/badge.svg?branch=master
-[godoc-url]: https://godoc.org/gopkg.in/session.v2
-[godoc-image]: https://godoc.org/gopkg.in/session.v2?status.svg
+[codecov-url]: https://codecov.io/gh/go-session/session
+[codecov-image]: https://codecov.io/gh/go-session/session/branch/master/graph/badge.svg
+[reportcard-url]: https://goreportcard.com/report/gopkg.in/session.v3
+[reportcard-image]: https://goreportcard.com/badge/gopkg.in/session.v3
+[godoc-url]: https://godoc.org/gopkg.in/session.v3
+[godoc-image]: https://godoc.org/gopkg.in/session.v3?status.svg
 [license-url]: http://opensource.org/licenses/MIT
 [license-image]: https://img.shields.io/npm/l/express.svg

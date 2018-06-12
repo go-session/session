@@ -1,9 +1,13 @@
 language: go
 sudo: false
-go_import_path: gopkg.in/session.v2
+go_import_path: gopkg.in/session.v3
 go:
   - 1.7
 before_install:
-  - go get github.com/mattn/goveralls
+  - go get -t -v ./...
+
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - go test -race -coverprofile=coverage.txt -covermode=atomic
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
