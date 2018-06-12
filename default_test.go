@@ -10,12 +10,15 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestDefaultStart(t *testing.T) {
-	cookieName := "test_default_start"
-	InitManager(
-		SetCookieName(cookieName),
-	)
+var defaultCookieName = "test_default_start"
 
+func init() {
+	InitManager(
+		SetCookieName(defaultCookieName),
+	)
+}
+
+func TestDefaultStart(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		store, err := Start(nil, w, r)
 		if err != nil {
@@ -46,7 +49,7 @@ func TestDefaultStart(t *testing.T) {
 		So(len(res.Cookies()), ShouldBeGreaterThan, 0)
 
 		cookie := res.Cookies()[0]
-		So(cookie.Name, ShouldEqual, cookieName)
+		So(cookie.Name, ShouldEqual, defaultCookieName)
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s?login=1", ts.URL), nil)
 		So(err, ShouldBeNil)
@@ -64,12 +67,6 @@ func TestDefaultStart(t *testing.T) {
 }
 
 func TestDefaultDestroy(t *testing.T) {
-	cookieName := "test_default_destroy"
-
-	InitManager(
-		SetCookieName(cookieName),
-	)
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("logout") == "1" {
 			err := Destroy(nil, w, r)
@@ -110,7 +107,7 @@ func TestDefaultDestroy(t *testing.T) {
 		So(len(res.Cookies()), ShouldBeGreaterThan, 0)
 
 		cookie := res.Cookies()[0]
-		So(cookie.Name, ShouldEqual, cookieName)
+		So(cookie.Name, ShouldEqual, defaultCookieName)
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s?logout=1", ts.URL), nil)
 		So(err, ShouldBeNil)
@@ -135,12 +132,6 @@ func TestDefaultDestroy(t *testing.T) {
 }
 
 func TestDefaultRefresh(t *testing.T) {
-	cookieName := "test_default_refresh"
-
-	InitManager(
-		SetCookieName(cookieName),
-	)
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		store, err := Start(nil, w, r)
 		if err != nil {
@@ -182,7 +173,7 @@ func TestDefaultRefresh(t *testing.T) {
 		So(len(res.Cookies()), ShouldBeGreaterThan, 0)
 
 		cookie := res.Cookies()[0]
-		So(cookie.Name, ShouldEqual, cookieName)
+		So(cookie.Name, ShouldEqual, defaultCookieName)
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s?refresh=1", ts.URL), nil)
 		So(err, ShouldBeNil)
