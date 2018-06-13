@@ -1,6 +1,6 @@
 language: go
 sudo: false
-go_import_path: gopkg.in/session.v3
+go_import_path: github.com/go-session/session
 go:
   - 1.7
 before_install:
