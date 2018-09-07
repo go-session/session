@@ -11,8 +11,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/satori/go.uuid"
 )
 
 var (
@@ -27,7 +25,7 @@ var defaultOptions = options{
 	expired:        7200,
 	store:          NewMemoryStore(),
 	sessionID: func() string {
-		return uuid.Must(uuid.NewV4()).String()
+		return must(NewRandom()).String()
 	},
 }
 
