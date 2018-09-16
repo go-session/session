@@ -87,6 +87,7 @@ $ ./server
 
 - [https://github.com/go-session/redis](https://github.com/go-session/redis) - Redis
 - [https://github.com/go-session/mongo](https://github.com/go-session/mongo) - MongoDB
+- [https://github.com/go-session/mysql](https://github.com/go-session/mysql) - MySQL
 - [https://github.com/go-session/buntdb](https://github.com/go-session/buntdb) - [BuntDB](https://github.com/tidwall/buntdb)
 - [https://github.com/go-session/cookie](https://github.com/go-session/cookie) - Cookie
 
