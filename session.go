@@ -23,7 +23,6 @@ var defaultOptions = options{
 	cookieName:     "go_session_id",
 	cookieLifeTime: 3600 * 24 * 7,
 	expired:        7200,
-	store:          NewMemoryStore(),
 	sessionID: func() string {
 		return must(NewRandom()).String()
 	},
@@ -107,14 +106,14 @@ func NewManager(opt ...Option) *Manager {
 	}
 
 	if opts.store == nil {
-		panic("unknown store")
+		opts.store = NewMemoryStore()
 	}
-	return &Manager{opts: opts}
+	return &Manager{opts: &opts}
 }
 
 // Manager A session management instance, including start and destroy operations
 type Manager struct {
-	opts options
+	opts *options
 }
 
 func (m *Manager) getContext(ctx context.Context, w http.ResponseWriter, r *http.Request) context.Context {
