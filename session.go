@@ -23,6 +23,7 @@ var defaultOptions = options{
 	cookieName:     "go_session_id",
 	cookieLifeTime: 3600 * 24 * 7,
 	expired:        7200,
+	secure:         true,
 	sessionID: func() string {
 		return must(NewRandom()).String()
 	},
@@ -190,10 +191,10 @@ func (m *Manager) setCookie(sessionID string, w http.ResponseWriter, r *http.Req
 		HttpOnly: true,
 		Secure:   m.isSecure(r),
 		Domain:   m.opts.domain,
+		MaxAge:   m.opts.cookieLifeTime,
 	}
 
 	if v := m.opts.cookieLifeTime; v > 0 {
-		cookie.MaxAge = v
 		cookie.Expires = time.Now().Add(time.Duration(v) * time.Second)
 	}
 
