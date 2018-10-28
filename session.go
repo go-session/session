@@ -25,7 +25,7 @@ var defaultOptions = options{
 	expired:        7200,
 	secure:         true,
 	sessionID: func() string {
-		return must(NewRandom()).String()
+		return newUUID()
 	},
 }
 

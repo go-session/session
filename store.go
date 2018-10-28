@@ -55,12 +55,6 @@ func NewMemoryStore() ManagerStore {
 		ticker: time.NewTicker(time.Second),
 	}
 
-	mstore.pool = sync.Pool{
-		New: func() interface{} {
-			return newStore(mstore)
-		},
-	}
-
 	go mstore.gc()
 
 	return mstore
@@ -82,7 +76,6 @@ func newDataItem(sid string, values map[string]interface{}, expired int64) *data
 
 type memoryStore struct {
 	sync.RWMutex
-	pool   sync.Pool
 	data   map[string]*dataItem
 	list   *list.List
 	ticker *time.Ticker
@@ -135,20 +128,16 @@ func (s *memoryStore) Check(_ context.Context, sid string) (bool, error) {
 }
 
 func (s *memoryStore) Create(ctx context.Context, sid string, expired int64) (Store, error) {
-	store := s.pool.Get().(*store)
-	store.reset(ctx, sid, expired, nil)
-	return store, nil
+	return newStore(ctx, s, sid, expired, nil), nil
 }
 
 func (s *memoryStore) Update(ctx context.Context, sid string, expired int64) (Store, error) {
-	store := s.pool.Get().(*store)
 	s.Lock()
 	defer s.Unlock()
 
 	item, ok := s.data[sid]
 	if !ok {
-		store.reset(ctx, sid, expired, nil)
-		return store, nil
+		return newStore(ctx, s, sid, expired, nil), nil
 	}
 
 	item.expiredAt = now().Add(time.Duration(expired) * time.Second)
@@ -159,12 +148,12 @@ func (s *memoryStore) Update(ctx context.Context, sid string, expired int64) (St
 		}
 	}
 
-	store.reset(ctx, sid, expired, item.values)
-	return store, nil
+	return newStore(ctx, s, sid, expired, item.values), nil
 }
 
 func (s *memoryStore) delete(sid string) {
 	delete(s.data, sid)
+
 	for e := s.list.Front(); e != nil; e = e.Next() {
 		if e.Value.(*dataItem).sid == sid {
 			s.list.Remove(e)
@@ -176,20 +165,18 @@ func (s *memoryStore) delete(sid string) {
 func (s *memoryStore) Delete(_ context.Context, sid string) error {
 	s.Lock()
 	defer s.Unlock()
+
 	s.delete(sid)
 	return nil
 }
 
 func (s *memoryStore) Refresh(ctx context.Context, oldsid, sid string, expired int64) (Store, error) {
-	store := s.pool.Get().(*store)
-
 	s.Lock()
 	defer s.Unlock()
 
 	item, ok := s.data[oldsid]
 	if !ok {
-		store.reset(ctx, sid, expired, nil)
-		return store, nil
+		return newStore(ctx, s, sid, expired, nil), nil
 	}
 
 	newItem := newDataItem(sid, item.values, expired)
@@ -197,8 +184,7 @@ func (s *memoryStore) Refresh(ctx context.Context, oldsid, sid string, expired i
 	s.list.PushBack(newItem)
 	s.delete(oldsid)
 
-	store.reset(ctx, sid, expired, newItem.values)
-	return store, nil
+	return newStore(ctx, s, sid, expired, newItem.values), nil
 }
 
 func (s *memoryStore) Close() error {
@@ -206,27 +192,27 @@ func (s *memoryStore) Close() error {
 	return nil
 }
 
-func newStore(mstore *memoryStore) *store {
-	return &store{mstore: mstore}
+func newStore(ctx context.Context, mstore *memoryStore, sid string, expired int64, values map[string]interface{}) *store {
+	if values == nil {
+		values = make(map[string]interface{})
+	}
+
+	return &store{
+		mstore:  mstore,
+		ctx:     ctx,
+		sid:     sid,
+		expired: expired,
+		values:  values,
+	}
 }
 
 type store struct {
-	mstore *memoryStore
 	sync.RWMutex
+	mstore  *memoryStore
 	ctx     context.Context
 	sid     string
 	expired int64
 	values  map[string]interface{}
-}
-
-func (s *store) reset(ctx context.Context, sid string, expired int64, values map[string]interface{}) {
-	if values == nil {
-		values = make(map[string]interface{})
-	}
-	s.ctx = ctx
-	s.sid = sid
-	s.expired = expired
-	s.values = values
 }
 
 func (s *store) Context() context.Context {
