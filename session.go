@@ -27,17 +27,23 @@ var defaultOptions = options{
 	sessionID: func() string {
 		return newUUID()
 	},
+	enableSetCookie:     true,
+	enableSIDInURLQuery: true,
 }
 
 type options struct {
-	sign           []byte
-	cookieName     string
-	cookieLifeTime int
-	secure         bool
-	domain         string
-	expired        int64
-	sessionID      func() string
-	store          ManagerStore
+	sign                    []byte
+	cookieName              string
+	cookieLifeTime          int
+	secure                  bool
+	domain                  string
+	expired                 int64
+	sessionID               func() string
+	enableSetCookie         bool
+	enableSIDInURLQuery     bool
+	enableSIDInHTTPHeader   bool
+	sessionNameInHTTPHeader string
+	store                   ManagerStore
 }
 
 // Option A session parameter options
@@ -92,6 +98,38 @@ func SetSessionID(sessionID func() string) Option {
 	}
 }
 
+// sessionNameInHTTPHeader string
+
+// SetEnableSetCookie Enable writing session id to cookie
+// (enabled by default, can be turned off if no cookie is written)
+func SetEnableSetCookie(enableSetCookie bool) Option {
+	return func(o *options) {
+		o.enableSetCookie = enableSetCookie
+	}
+}
+
+// SetEnableSIDInURLQuery Allow session id from URL query parameters (enabled by default)
+func SetEnableSIDInURLQuery(enableSIDInURLQuery bool) Option {
+	return func(o *options) {
+		o.enableSIDInURLQuery = enableSIDInURLQuery
+	}
+}
+
+// SetEnableSIDInHTTPHeader Allow session id to be obtained from the request header
+func SetEnableSIDInHTTPHeader(enableSIDInHTTPHeader bool) Option {
+	return func(o *options) {
+		o.enableSIDInHTTPHeader = enableSIDInHTTPHeader
+	}
+}
+
+// SetSessionNameInHTTPHeader The key name in the request header where the session ID is stored
+// (if it is empty, the default is the cookie name)
+func SetSessionNameInHTTPHeader(sessionNameInHTTPHeader string) Option {
+	return func(o *options) {
+		o.sessionNameInHTTPHeader = sessionNameInHTTPHeader
+	}
+}
+
 // SetStore Set session management storage
 func SetStore(store ManagerStore) Option {
 	return func(o *options) {
@@ -104,6 +142,10 @@ func NewManager(opt ...Option) *Manager {
 	opts := defaultOptions
 	for _, o := range opt {
 		o(&opts)
+	}
+
+	if opts.enableSIDInHTTPHeader && opts.sessionNameInHTTPHeader == "" {
+		opts.sessionNameInHTTPHeader = opts.cookieName
 	}
 
 	if opts.store == nil {
@@ -157,10 +199,24 @@ func (m *Manager) decodeSessionID(value string) (string, error) {
 }
 
 func (m *Manager) sessionID(r *http.Request) (string, error) {
+	var cookieValue string
 	cookie, err := r.Cookie(m.opts.cookieName)
 	if err == nil && cookie.Value != "" {
-		return m.decodeSessionID(cookie.Value)
+		cookieValue = cookie.Value
+	} else if m.opts.enableSIDInURLQuery {
+		err := r.ParseForm()
+		if err != nil {
+			return "", err
+		}
+		cookieValue = r.FormValue(m.opts.cookieName)
+	} else if m.opts.enableSIDInHTTPHeader {
+		cookieValue = r.Header.Get(m.opts.sessionNameInHTTPHeader)
 	}
+
+	if cookieValue != "" {
+		return m.decodeSessionID(cookieValue)
+	}
+
 	return "", nil
 }
 
@@ -184,22 +240,32 @@ func (m *Manager) isSecure(r *http.Request) bool {
 }
 
 func (m *Manager) setCookie(sessionID string, w http.ResponseWriter, r *http.Request) {
+	cookieValue := m.encodeSessionID(sessionID)
 	cookie := &http.Cookie{
 		Name:     m.opts.cookieName,
-		Value:    m.encodeSessionID(sessionID),
+		Value:    cookieValue,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   m.isSecure(r),
 		Domain:   m.opts.domain,
-		MaxAge:   m.opts.cookieLifeTime,
 	}
 
 	if v := m.opts.cookieLifeTime; v > 0 {
+		cookie.MaxAge = v
 		cookie.Expires = time.Now().Add(time.Duration(v) * time.Second)
 	}
 
-	http.SetCookie(w, cookie)
+	if m.opts.enableSetCookie {
+		http.SetCookie(w, cookie)
+	}
+
 	r.AddCookie(cookie)
+
+	if m.opts.enableSIDInHTTPHeader {
+		key := m.opts.sessionNameInHTTPHeader
+		r.Header.Set(key, cookieValue)
+		w.Header().Set(key, cookieValue)
+	}
 }
 
 // Start a session and return to session storage
@@ -271,14 +337,17 @@ func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	cookie := &http.Cookie{
-		Name:     m.opts.cookieName,
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Now(),
-		MaxAge:   -1,
+	if m.opts.enableSetCookie {
+		cookie := &http.Cookie{
+			Name:     m.opts.cookieName,
+			Path:     "/",
+			HttpOnly: true,
+			Expires:  time.Now(),
+			MaxAge:   -1,
+		}
+
+		http.SetCookie(w, cookie)
 	}
 
-	http.SetCookie(w, cookie)
 	return nil
 }
