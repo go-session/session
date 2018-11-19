@@ -98,8 +98,6 @@ func SetSessionID(sessionID func() string) Option {
 	}
 }
 
-// sessionNameInHTTPHeader string
-
 // SetEnableSetCookie Enable writing session id to cookie
 // (enabled by default, can be turned off if no cookie is written)
 func SetEnableSetCookie(enableSetCookie bool) Option {
