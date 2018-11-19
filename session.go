@@ -335,6 +335,12 @@ func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
+	if m.opts.enableSIDInHTTPHeader {
+		key := m.opts.sessionNameInHTTPHeader
+		r.Header.Del(key)
+		w.Header().Del(key)
+	}
+
 	if m.opts.enableSetCookie {
 		cookie := &http.Cookie{
 			Name:     m.opts.cookieName,
