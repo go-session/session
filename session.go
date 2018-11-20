@@ -198,17 +198,22 @@ func (m *Manager) decodeSessionID(value string) (string, error) {
 
 func (m *Manager) sessionID(r *http.Request) (string, error) {
 	var cookieValue string
+
 	cookie, err := r.Cookie(m.opts.cookieName)
 	if err == nil && cookie.Value != "" {
 		cookieValue = cookie.Value
-	} else if m.opts.enableSIDInURLQuery {
-		err := r.ParseForm()
-		if err != nil {
-			return "", err
+	} else {
+		if m.opts.enableSIDInURLQuery {
+			err := r.ParseForm()
+			if err != nil {
+				return "", err
+			}
+			cookieValue = r.FormValue(m.opts.cookieName)
 		}
-		cookieValue = r.FormValue(m.opts.cookieName)
-	} else if m.opts.enableSIDInHTTPHeader {
-		cookieValue = r.Header.Get(m.opts.sessionNameInHTTPHeader)
+
+		if m.opts.enableSIDInHTTPHeader && cookieValue == "" {
+			cookieValue = r.Header.Get(m.opts.sessionNameInHTTPHeader)
+		}
 	}
 
 	if cookieValue != "" {
