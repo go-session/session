@@ -18,13 +18,16 @@ var (
 	ErrInvalidSessionID = errors.New("invalid session id")
 )
 
+// IDHandlerFunc Define the handler to get the session id
+type IDHandlerFunc func(context.Context) string
+
 // Define default options
 var defaultOptions = options{
 	cookieName:     "go_session_id",
 	cookieLifeTime: 3600 * 24 * 7,
 	expired:        7200,
 	secure:         true,
-	sessionID: func() string {
+	sessionID: func(_ context.Context) string {
 		return newUUID()
 	},
 	enableSetCookie:     true,
@@ -38,7 +41,7 @@ type options struct {
 	secure                  bool
 	domain                  string
 	expired                 int64
-	sessionID               func() string
+	sessionID               IDHandlerFunc
 	enableSetCookie         bool
 	enableSIDInURLQuery     bool
 	enableSIDInHTTPHeader   bool
@@ -92,9 +95,9 @@ func SetExpired(expired int64) Option {
 }
 
 // SetSessionID Set callback function to generate session id
-func SetSessionID(sessionID func() string) Option {
+func SetSessionID(handler IDHandlerFunc) Option {
 	return func(o *options) {
-		o.sessionID = sessionID
+		o.sessionID = handler
 	}
 }
 
@@ -290,7 +293,8 @@ func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	store, err := m.opts.store.Create(ctx, m.opts.sessionID(), m.opts.expired)
+	sid = m.opts.sessionID(ctx)
+	store, err := m.opts.store.Create(ctx, sid, m.opts.expired)
 	if err != nil {
 		return nil, err
 	}
@@ -303,14 +307,15 @@ func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Requ
 func (m *Manager) Refresh(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
 	ctx = m.getContext(ctx, w, r)
 
-	sid, err := m.sessionID(r)
+	oldsid, err := m.sessionID(r)
 	if err != nil {
 		return nil, err
-	} else if sid == "" {
-		sid = m.opts.sessionID()
+	} else if oldsid == "" {
+		oldsid = m.opts.sessionID(ctx)
 	}
 
-	store, err := m.opts.store.Refresh(ctx, sid, m.opts.sessionID(), m.opts.expired)
+	sid := m.opts.sessionID(ctx)
+	store, err := m.opts.store.Refresh(ctx, oldsid, sid, m.opts.expired)
 	if err != nil {
 		return nil, err
 	}
