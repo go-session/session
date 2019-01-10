@@ -82,6 +82,7 @@ $ ./server
 - Multi-middleware support
 - More secure, signature-based tamper-proof
 - Context support
+- Support request header and query parameters
 
 ## Store Implementations
 
