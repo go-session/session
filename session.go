@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+// Version # of session
+const Version = "3.1.4"
+
 var (
 	// ErrInvalidSessionID invalid session id
 	ErrInvalidSessionID = errors.New("invalid session id")
