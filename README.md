@@ -102,7 +102,7 @@ $ ./server
 
 ## MIT License
 
-    Copyright (c) 2018 Lyric
+    Copyright (c) 2020 Lyric
 
 [Build-Status-Url]: https://travis-ci.org/go-session/session
 [Build-Status-Image]: https://travis-ci.org/go-session/session.svg?branch=master

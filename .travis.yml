@@ -2,7 +2,7 @@ language: go
 sudo: false
 go_import_path: github.com/go-session/session
 go:
-  - 1.7
+  - 1.13
 before_install:
   - go get -t -v ./...
 
