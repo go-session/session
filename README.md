@@ -9,7 +9,7 @@
 ### Download and install
 
 ```bash
-$ go get -v github.com/go-session/session
+$ go get -v github.com/screeningeagledreamlab/go-session
 ```
 
 ### Create file `server.go`
@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-session/session"
+	"github.com/screeningeagledreamlab/go-session"
 )
 
 func main() {
@@ -108,9 +108,9 @@ $ ./server
 [Build-Status-Image]: https://travis-ci.org/go-session/session.svg?branch=master
 [codecov-url]: https://codecov.io/gh/go-session/session
 [codecov-image]: https://codecov.io/gh/go-session/session/branch/master/graph/badge.svg
-[reportcard-url]: https://goreportcard.com/report/github.com/go-session/session
-[reportcard-image]: https://goreportcard.com/badge/github.com/go-session/session
-[godoc-url]: https://godoc.org/github.com/go-session/session
-[godoc-image]: https://godoc.org/github.com/go-session/session?status.svg
+[reportcard-url]: https://goreportcard.com/report/github.com/screeningeagledreamlab/go-session
+[reportcard-image]: https://goreportcard.com/badge/github.com/screeningeagledreamlab/go-session
+[godoc-url]: https://godoc.org/github.com/screeningeagledreamlab/go-session
+[godoc-image]: https://godoc.org/github.com/screeningeagledreamlab/go-session?status.svg
 [license-url]: http://opensource.org/licenses/MIT
 [license-image]: https://img.shields.io/npm/l/express.svg

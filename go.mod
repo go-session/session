@@ -1,4 +1,4 @@
-module github.com/go-session/session
+module github.com/screeningeagledreamlab/go-session
 
 go 1.14
 

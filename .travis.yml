@@ -1,6 +1,6 @@
 language: go
 sudo: false
-go_import_path: github.com/go-session/session
+go_import_path: github.com/screeningeagledreamlab/go-session
 go:
   - 1.13
 before_install:
