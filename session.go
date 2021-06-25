@@ -30,6 +30,7 @@ var defaultOptions = options{
 	cookieLifeTime: 3600 * 24 * 7,
 	expired:        7200,
 	secure:         true,
+	sameSite:       http.SameSiteDefaultMode,
 	sessionID: func(_ context.Context) string {
 		return newUUID()
 	},
@@ -43,6 +44,7 @@ type options struct {
 	cookieLifeTime          int
 	secure                  bool
 	domain                  string
+	sameSite                http.SameSite
 	expired                 int64
 	sessionID               IDHandlerFunc
 	enableSetCookie         bool
@@ -87,6 +89,13 @@ func SetDomain(domain string) Option {
 func SetSecure(secure bool) Option {
 	return func(o *options) {
 		o.secure = secure
+	}
+}
+
+// SetSameSite Set SameSite attribute of the cookie
+func SetSameSite(sameSite http.SameSite) Option {
+	return func(o *options) {
+		o.sameSite = sameSite
 	}
 }
 
@@ -261,6 +270,7 @@ func (m *Manager) setCookie(sessionID string, w http.ResponseWriter, r *http.Req
 			HttpOnly: true,
 			Secure:   m.isSecure(r),
 			Domain:   m.opts.domain,
+			SameSite: m.opts.sameSite,
 		}
 
 		if v := m.opts.cookieLifeTime; v > 0 {
