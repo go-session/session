@@ -1,4 +1,4 @@
-module github.com/go-session/session
+module github.com/go-session/session/v3
 
 go 1.14
 

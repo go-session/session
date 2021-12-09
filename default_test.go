@@ -20,7 +20,7 @@ func init() {
 
 func TestDefaultStart(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		store, err := Start(nil, w, r)
+		store, err := Start(r.Context(), w, r)
 		if err != nil {
 			t.Error(err)
 			return
@@ -69,7 +69,7 @@ func TestDefaultStart(t *testing.T) {
 func TestDefaultDestroy(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("logout") == "1" {
-			err := Destroy(nil, w, r)
+			err := Destroy(r.Context(), w, r)
 			if err != nil {
 				t.Error(err)
 				return
@@ -78,7 +78,7 @@ func TestDefaultDestroy(t *testing.T) {
 			return
 		}
 
-		store, err := Start(nil, w, r)
+		store, err := Start(r.Context(), w, r)
 		if err != nil {
 			t.Error(err)
 			return
@@ -133,14 +133,14 @@ func TestDefaultDestroy(t *testing.T) {
 
 func TestDefaultRefresh(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		store, err := Start(nil, w, r)
+		store, err := Start(r.Context(), w, r)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
 		if r.URL.Query().Get("refresh") == "1" {
-			vstore, verr := Refresh(nil, w, r)
+			vstore, verr := Refresh(r.Context(), w, r)
 			if verr != nil {
 				t.Error(err)
 				return

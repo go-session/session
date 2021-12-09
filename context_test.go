@@ -12,15 +12,15 @@ import (
 
 func TestContext(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var ctxKey interface{} = "ctx"
-		ctx := context.WithValue(context.Background(), ctxKey, "bar")
+		type ctxKey struct{}
+		ctx := context.WithValue(context.Background(), ctxKey{}, "bar")
 		store, err := Start(ctx, w, r)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
-		ctxValue := store.Context().Value(ctxKey)
+		ctxValue := store.Context().Value(ctxKey{})
 		if !reflect.DeepEqual(ctxValue, "bar") {
 			t.Error("Not expected value:", ctxValue)
 			return

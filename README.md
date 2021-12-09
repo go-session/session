@@ -1,15 +1,15 @@
 # session
 
-> A efficient, safely and easy-to-use session library for Go. 
+> A efficient, safely and easy-to-use session library for Go.
 
-[![Build][Build-Status-Image]][Build-Status-Url] [![Codecov][codecov-image]][codecov-url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
+[![Build][build-status-image]][build-status-url] [![Codecov][codecov-image]][codecov-url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
 
 ## Quick Start
 
 ### Download and install
 
 ```bash
-$ go get -v github.com/go-session/session
+go get -v github.com/go-session/session/v3
 ```
 
 ### Create file `server.go`
@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-session/session"
+	session "github.com/go-session/session/v3"
 )
 
 func main() {
@@ -65,15 +65,17 @@ func main() {
 ### Build and run
 
 ```bash
-$ go build server.go
-$ ./server
+go build server.go
+./server
 ```
 
 ### Open in your web browser
 
 <http://localhost:8080>
 
+```text
     foo:bar
+```
 
 ## Features
 
@@ -102,10 +104,10 @@ $ ./server
 
 ## MIT License
 
-    Copyright (c) 2020 Lyric
+    Copyright (c) 2021 Lyric
 
-[Build-Status-Url]: https://travis-ci.org/go-session/session
-[Build-Status-Image]: https://travis-ci.org/go-session/session.svg?branch=master
+[build-status-url]: https://travis-ci.org/go-session/session
+[build-status-image]: https://travis-ci.org/go-session/session.svg?branch=master
 [codecov-url]: https://codecov.io/gh/go-session/session
 [codecov-image]: https://codecov.io/gh/go-session/session/branch/master/graph/badge.svg
 [reportcard-url]: https://goreportcard.com/report/github.com/go-session/session
