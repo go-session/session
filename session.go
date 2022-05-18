@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -249,6 +250,11 @@ func (m *Manager) encodeSessionID(sid string) string {
 func (m *Manager) isSecure(r *http.Request) bool {
 	if !m.opts.secure {
 		return false
+	}
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	ip := net.ParseIP(host)
+	if ip.IsLoopback() || ip.IsPrivate() {
+		return true
 	}
 	if r.URL.Scheme != "" {
 		return r.URL.Scheme == "https"
