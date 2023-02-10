@@ -83,22 +83,20 @@ type memoryStore struct {
 
 func (s *memoryStore) gc() {
 	for range s.ticker.C {
-		s.RLock()
-		e := s.list.Front()
-		s.RUnlock()
+		func() {
+			s.Lock()
+			defer s.Unlock()
 
-		for e != nil {
-			item := e.Value.(*dataItem)
-			if item.expiredAt.Before(now()) {
-				s.Lock()
-				s.list.Remove(e)
-				delete(s.data, item.sid)
-				e = e.Next()
-				s.Unlock()
-			} else {
-				break
+			for e := s.list.Front(); e != nil; e = e.Next() {
+				item := e.Value.(*dataItem)
+				if item.expiredAt.Before(now()) {
+					s.list.Remove(e)
+					delete(s.data, item.sid)
+				} else {
+					continue
+				}
 			}
-		}
+		}()
 	}
 }
 
