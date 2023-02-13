@@ -51,7 +51,7 @@ type Store interface {
 // Create a new session storage (memory)
 func NewMemoryStore() ManagerStore {
 	mstore := &memoryStore{
-		ticker: time.NewTicker(time.Second * 3),
+		ticker: time.NewTicker(time.Second),
 		data:   skipmap.NewString(),
 	}
 

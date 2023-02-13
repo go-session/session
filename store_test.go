@@ -118,7 +118,7 @@ func testStoreWithExpired(mstore ManagerStore) {
 	So(foo, ShouldEqual, "bar")
 	So(ok, ShouldBeTrue)
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 3)
 
 	exists, err := mstore.Check(context.Background(), sid)
 	So(err, ShouldBeNil)
