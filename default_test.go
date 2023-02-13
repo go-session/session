@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -59,7 +59,7 @@ func TestDefaultStart(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(res, ShouldNotBeNil)
 
-		buf, err := ioutil.ReadAll(res.Body)
+		buf, err := io.ReadAll(res.Body)
 		So(err, ShouldBeNil)
 		res.Body.Close()
 		So(string(buf), ShouldEqual, "bar:true")
@@ -124,7 +124,7 @@ func TestDefaultDestroy(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(res, ShouldNotBeNil)
 
-		buf, err := ioutil.ReadAll(res.Body)
+		buf, err := io.ReadAll(res.Body)
 		So(err, ShouldBeNil)
 		res.Body.Close()
 		So(string(buf), ShouldEqual, "<nil>:false")
@@ -185,7 +185,7 @@ func TestDefaultRefresh(t *testing.T) {
 		So(len(res.Cookies()), ShouldBeGreaterThan, 0)
 		So(res.Cookies()[0].Value, ShouldNotEqual, cookie.Value)
 
-		buf, err := ioutil.ReadAll(res.Body)
+		buf, err := io.ReadAll(res.Body)
 		So(err, ShouldBeNil)
 		res.Body.Close()
 		So(string(buf), ShouldEqual, "bar:true")

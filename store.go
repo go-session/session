@@ -1,10 +1,11 @@
 package session
 
 import (
-	"container/list"
 	"context"
 	"sync"
 	"time"
+
+	"github.com/bytedance/gopkg/collection/skipmap"
 )
 
 var (
@@ -13,7 +14,7 @@ var (
 	now              = time.Now
 )
 
-// ManagerStore Management of session storage, including creation, update, and delete operations
+// Management of session storage, including creation, update, and delete operations
 type ManagerStore interface {
 	// Check the session store exists
 	Check(ctx context.Context, sid string) (bool, error)
@@ -29,7 +30,7 @@ type ManagerStore interface {
 	Close() error
 }
 
-// Store A session id storage operation
+// A session id storage operation
 type Store interface {
 	// Get a session storage context
 	Context() context.Context
@@ -47,16 +48,14 @@ type Store interface {
 	Flush() error
 }
 
-// NewMemoryStore create an instance of a memory store
+// Create a new session storage (memory)
 func NewMemoryStore() ManagerStore {
 	mstore := &memoryStore{
-		data:   make(map[string]*dataItem),
-		list:   list.New(),
-		ticker: time.NewTicker(time.Second),
+		ticker: time.NewTicker(time.Second * 3),
+		data:   skipmap.NewString(),
 	}
 
 	go mstore.gc()
-
 	return mstore
 }
 
@@ -75,53 +74,37 @@ func newDataItem(sid string, values map[string]interface{}, expired int64) *data
 }
 
 type memoryStore struct {
-	sync.RWMutex
-	data   map[string]*dataItem
-	list   *list.List
 	ticker *time.Ticker
+	data   *skipmap.StringMap
 }
 
 func (s *memoryStore) gc() {
 	for range s.ticker.C {
-		s.RLock()
-		e := s.list.Front()
-		s.RUnlock()
-
-		for e != nil {
-			item := e.Value.(*dataItem)
-			if item.expiredAt.Before(now()) {
-				s.Lock()
-				s.list.Remove(e)
-				delete(s.data, item.sid)
-				e = e.Next()
-				s.Unlock()
-			} else {
-				break
+		s.data.Range(func(key string, value interface{}) bool {
+			if item, ok := value.(*dataItem); ok && item.expiredAt.Before(now()) {
+				s.data.Delete(key)
 			}
-		}
+			return true
+		})
 	}
 }
 
 func (s *memoryStore) save(sid string, values map[string]interface{}, expired int64) {
-	s.Lock()
-	defer s.Unlock()
-
-	if item, ok := s.data[sid]; ok {
-		item.values = values
+	if dt, ok := s.data.Load(sid); ok {
+		dt.(*dataItem).values = values
 		return
 	}
 
-	item := newDataItem(sid, values, expired)
-	s.data[sid] = item
-	s.list.PushBack(item)
+	s.data.Store(sid, newDataItem(sid, values, expired))
 }
 
-func (s *memoryStore) Check(_ context.Context, sid string) (bool, error) {
-	s.RLock()
-	item, ok := s.data[sid]
-	s.RUnlock()
+func (s *memoryStore) Check(ctx context.Context, sid string) (bool, error) {
+	dt, ok := s.data.Load(sid)
+	if !ok {
+		return false, nil
+	}
 
-	if ok && item.expiredAt.After(now()) {
+	if item, ok := dt.(*dataItem); ok && item.expiredAt.After(now()) {
 		return true, nil
 	}
 	return false, nil
@@ -132,58 +115,36 @@ func (s *memoryStore) Create(ctx context.Context, sid string, expired int64) (St
 }
 
 func (s *memoryStore) Update(ctx context.Context, sid string, expired int64) (Store, error) {
-	s.Lock()
-	defer s.Unlock()
-
-	item, ok := s.data[sid]
+	dt, ok := s.data.Load(sid)
 	if !ok {
 		return newStore(ctx, s, sid, expired, nil), nil
 	}
 
+	item := dt.(*dataItem)
 	item.expiredAt = now().Add(time.Duration(expired) * time.Second)
-	for e := s.list.Front(); e != nil; e = e.Next() {
-		if e.Value.(*dataItem).sid == sid {
-			s.list.MoveToBack(e)
-			break
-		}
-	}
-
+	s.data.Store(sid, item)
 	return newStore(ctx, s, sid, expired, item.values), nil
 }
 
 func (s *memoryStore) delete(sid string) {
-	delete(s.data, sid)
-
-	for e := s.list.Front(); e != nil; e = e.Next() {
-		if e.Value.(*dataItem).sid == sid {
-			s.list.Remove(e)
-			break
-		}
-	}
+	s.data.Delete(sid)
 }
 
 func (s *memoryStore) Delete(_ context.Context, sid string) error {
-	s.Lock()
-	defer s.Unlock()
-
 	s.delete(sid)
 	return nil
 }
 
 func (s *memoryStore) Refresh(ctx context.Context, oldsid, sid string, expired int64) (Store, error) {
-	s.Lock()
-	defer s.Unlock()
-
-	item, ok := s.data[oldsid]
+	dt, ok := s.data.Load(oldsid)
 	if !ok {
 		return newStore(ctx, s, sid, expired, nil), nil
 	}
 
+	item := dt.(*dataItem)
 	newItem := newDataItem(sid, item.values, expired)
-	s.data[sid] = newItem
-	s.list.PushBack(newItem)
+	s.data.Store(sid, newItem)
 	s.delete(oldsid)
-
 	return newStore(ctx, s, sid, expired, newItem.values), nil
 }
 

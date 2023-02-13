@@ -18,11 +18,10 @@ import (
 const Version = "3.1.4"
 
 var (
-	// ErrInvalidSessionID invalid session id
-	ErrInvalidSessionID = errors.New("invalid session id")
+	ErrInvalidSessionID = errors.New("Invalid session id")
 )
 
-// IDHandlerFunc Define the handler to get the session id
+// Define the handler to get the session id
 type IDHandlerFunc func(context.Context) string
 
 // Define default options
@@ -55,66 +54,65 @@ type options struct {
 	store                   ManagerStore
 }
 
-// Option A session parameter options
 type Option func(*options)
 
-// SetSign Set the session id signature value
+// Set the session id signature value
 func SetSign(sign []byte) Option {
 	return func(o *options) {
 		o.sign = sign
 	}
 }
 
-// SetCookieName Set the cookie name
+// Set the cookie name
 func SetCookieName(cookieName string) Option {
 	return func(o *options) {
 		o.cookieName = cookieName
 	}
 }
 
-// SetCookieLifeTime Set the cookie expiration time (in seconds)
+// Set the cookie expiration time (in seconds)
 func SetCookieLifeTime(cookieLifeTime int) Option {
 	return func(o *options) {
 		o.cookieLifeTime = cookieLifeTime
 	}
 }
 
-// SetDomain Set the domain name of the cookie
+// Set the domain name of the cookie
 func SetDomain(domain string) Option {
 	return func(o *options) {
 		o.domain = domain
 	}
 }
 
-// SetSecure Set cookie security
+// Set cookie security
 func SetSecure(secure bool) Option {
 	return func(o *options) {
 		o.secure = secure
 	}
 }
 
-// SetSameSite Set SameSite attribute of the cookie
+// Set SameSite attribute of the cookie
 func SetSameSite(sameSite http.SameSite) Option {
 	return func(o *options) {
 		o.sameSite = sameSite
 	}
 }
 
-// SetExpired Set session expiration time (in seconds)
+// Set session expiration time (in seconds)
 func SetExpired(expired int64) Option {
 	return func(o *options) {
 		o.expired = expired
 	}
 }
 
-// SetSessionID Set callback function to generate session id
+// Set callback function to generate session id
 func SetSessionID(handler IDHandlerFunc) Option {
 	return func(o *options) {
 		o.sessionID = handler
 	}
 }
 
-// SetEnableSetCookie Enable writing session id to cookie
+// Enable writing session id to cookie
 // (enabled by default, can be turned off if no cookie is written)
 func SetEnableSetCookie(enableSetCookie bool) Option {
 	return func(o *options) {
@@ -122,21 +120,21 @@ func SetEnableSetCookie(enableSetCookie bool) Option {
 	}
 }
 
-// SetEnableSIDInURLQuery Allow session id from URL query parameters (enabled by default)
+// Allow session id from URL query parameters (enabled by default)
 func SetEnableSIDInURLQuery(enableSIDInURLQuery bool) Option {
 	return func(o *options) {
 		o.enableSIDInURLQuery = enableSIDInURLQuery
 	}
 }
 
-// SetEnableSIDInHTTPHeader Allow session id to be obtained from the request header
+// Allow session id to be obtained from the request header
 func SetEnableSIDInHTTPHeader(enableSIDInHTTPHeader bool) Option {
 	return func(o *options) {
 		o.enableSIDInHTTPHeader = enableSIDInHTTPHeader
 	}
 }
 
-// SetSessionNameInHTTPHeader The key name in the request header where the session ID is stored
+// The key name in the request header where the session ID is stored
 // (if it is empty, the default is the cookie name)
 func SetSessionNameInHTTPHeader(sessionNameInHTTPHeader string) Option {
 	return func(o *options) {
@@ -144,14 +142,14 @@ func SetSessionNameInHTTPHeader(sessionNameInHTTPHeader string) Option {
 	}
 }
 
-// SetStore Set session management storage
+// Set session management storage
 func SetStore(store ManagerStore) Option {
 	return func(o *options) {
 		o.store = store
 	}
 }
 
-// NewManager Create a session management instance
+// Create a session management instance
 func NewManager(opt ...Option) *Manager {
 	opts := defaultOptions
 	for _, o := range opt {
@@ -168,7 +166,7 @@ func NewManager(opt ...Option) *Manager {
 	return &Manager{opts: &opts}
 }
 
-// Manager A session management instance, including start and destroy operations
+// A session management instance, including start and destroy operations
 type Manager struct {
 	opts *options
 }
@@ -305,8 +303,8 @@ func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	if sid != "" {
-		if exists, verr := m.opts.store.Check(ctx, sid); verr != nil {
-			return nil, verr
+		if exists, err := m.opts.store.Check(ctx, sid); err != nil {
+			return nil, err
 		} else if exists {
 			return m.opts.store.Update(ctx, sid, m.opts.expired)
 		}
@@ -322,19 +320,19 @@ func (m *Manager) Start(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return store, nil
 }
 
-// Refresh a session and return to session storage
+// Refresh and return session storage
 func (m *Manager) Refresh(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
 	ctx = m.getContext(ctx, w, r)
 
-	oldsid, err := m.sessionID(r)
+	oldSID, err := m.sessionID(r)
 	if err != nil {
 		return nil, err
-	} else if oldsid == "" {
-		oldsid = m.opts.sessionID(ctx)
+	} else if oldSID == "" {
+		oldSID = m.opts.sessionID(ctx)
 	}
 
 	sid := m.opts.sessionID(ctx)
-	store, err := m.opts.store.Refresh(ctx, oldsid, sid, m.opts.expired)
+	store, err := m.opts.store.Refresh(ctx, oldSID, sid, m.opts.expired)
 	if err != nil {
 		return nil, err
 	}
@@ -354,8 +352,7 @@ func (m *Manager) Destroy(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return nil
 	}
 
-	exists, err := m.opts.store.Check(ctx, sid)
-	if err != nil {
+	if exists, err := m.opts.store.Check(ctx, sid); err != nil {
 		return err
 	} else if !exists {
 		return nil

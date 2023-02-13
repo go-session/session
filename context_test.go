@@ -3,7 +3,7 @@ package session
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -48,7 +48,7 @@ func TestContext(t *testing.T) {
 		return
 	}
 
-	buf, _ := ioutil.ReadAll(res.Body)
+	buf, _ := io.ReadAll(res.Body)
 	res.Body.Close()
 	if string(buf) != "ok" {
 		t.Error("Not expected value:", string(buf))

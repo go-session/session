@@ -9,7 +9,7 @@ import (
 // create a UUID, reference: https://github.com/google/uuid
 func newUUID() string {
 	var buf [16]byte
-	io.ReadFull(rand.Reader, buf[:])
+	_, _ = io.ReadFull(rand.Reader, buf[:])
 	buf[6] = (buf[6] & 0x0f) | 0x40
 	buf[8] = (buf[8] & 0x3f) | 0x80
 

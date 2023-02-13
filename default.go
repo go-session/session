@@ -18,7 +18,7 @@ func manager(opt ...Option) *Manager {
 	return internalManager
 }
 
-// InitManager initialize the global session management instance
+// Initialize the global session management instance
 func InitManager(opt ...Option) {
 	manager(opt...)
 }
@@ -33,7 +33,7 @@ func Destroy(ctx context.Context, w http.ResponseWriter, r *http.Request) error 
 	return manager().Destroy(ctx, w, r)
 }
 
-// Refresh a session and return to session storage
+// Refresh and return session storage
 func Refresh(ctx context.Context, w http.ResponseWriter, r *http.Request) (Store, error) {
 	return manager().Refresh(ctx, w, r)
 }

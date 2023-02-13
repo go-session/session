@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// Define the key in the context
+// Define the keys in the context
 type (
 	ctxResKey struct{}
 	ctxReqKey struct{}
